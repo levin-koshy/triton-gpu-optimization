@@ -1,0 +1,14 @@
+[project]
+name = "triton-gpu-optimization"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.5.3",
+    "torch>=2.14.0",
+    "triton>=3.8.0 ; sys_platform == 'linux'",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

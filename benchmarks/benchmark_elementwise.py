@@ -1,7 +1,4 @@
-"""Benchmark the Project 1 PyTorch and Triton implementations.
-
-We will complete this file after correctness has been established.
-"""
+"""Benchmark the Project 1 PyTorch and Triton implementations."""
 import torch
 
 try:
@@ -25,29 +22,39 @@ def require_gpu_environment():
 
 
 def pytorch_baseline(x, bias):
+    """Run the reference operation on input tensor x and same-shaped bias."""
     return torch.relu(x * 2 + bias)
 
 
 def triton_implementation(x, bias, block_size=128):
+    """Run the fused kernel, processing block_size elements per Triton program."""
     y = torch.empty_like(x)
+    # x, bias: input tensors; y: output tensor; x.numel(): total element count.
+    # block_size: number of elements assigned to each Triton program instance.
     fused_launcher(x, bias, y, x.numel(), block_size)
     return y
 
 
 def benchmark_once(n=1_000_000):
+    """Benchmark both implementations using n float32 elements."""
     require_gpu_environment()
 
     x = torch.randn(n, device="cuda", dtype=torch.float32)
     bias = torch.randn(n, device="cuda", dtype=torch.float32)
 
     pytorch_ms = triton.testing.do_bench(
+        # fn: zero-argument callable containing the operation being measured.
         lambda: pytorch_baseline(x, bias),
+        # warmup: milliseconds spent warming caches and compiling before timing.
         warmup=25,
+        # rep: milliseconds spent collecting timed repetitions.
         rep=100,
+        # return_mode: statistic returned from the collected timings.
         return_mode="median",
     )
 
     triton_ms = triton.testing.do_bench(
+        # Use the same timing parameters so the comparison is fair.
         lambda: triton_implementation(x, bias),
         warmup=25,
         rep=100,

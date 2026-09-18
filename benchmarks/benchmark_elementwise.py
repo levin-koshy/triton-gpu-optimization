@@ -3,11 +3,27 @@
 We will complete this file after correctness has been established.
 """
 import torch
-import triton
-from kernels.fused_elementwise import fused_launcher
 
-# TODO(Stage 7): add GPU-aware timing with warmup and repeated measurements.
-# Report latency, throughput, and PyTorch-time / Triton-time speedup.
+try:
+    import triton
+    from kernels.fused_elementwise import fused_launcher
+except ModuleNotFoundError as error:
+    if error.name != "triton":
+        raise
+    triton = None
+    fused_launcher = None
+
+
+def require_gpu_environment():
+    if triton is None:
+        raise SystemExit(
+            "This benchmark requires Triton on Linux. "
+            "Run it on the Linux NVIDIA GPU environment, not macOS."
+        )
+    if not torch.cuda.is_available():
+        raise SystemExit("This benchmark requires an available NVIDIA CUDA GPU.")
+
+
 def pytorch_baseline(x, bias):
     return torch.relu(x * 2 + bias)
 
@@ -19,6 +35,8 @@ def triton_implementation(x, bias, block_size=128):
 
 
 def benchmark_once(n=1_000_000):
+    require_gpu_environment()
+
     x = torch.randn(n, device="cuda", dtype=torch.float32)
     bias = torch.randn(n, device="cuda", dtype=torch.float32)
 
